@@ -825,14 +825,14 @@ with st.sidebar:
     st.markdown("### Login JPJ")
     username = st.text_input(
         "No. IC / Username",
-        value=st.session_state.get("_jpj_user", ""),
-        placeholder="000101-01-0000",
+        value=st.session_state.get("_jpj_user", "881202135505"),
+        placeholder="881202135505",
         label_visibility="collapsed",
     )
     password = st.text_input(
         "Password",
         type="password",
-        value=st.session_state.get("_jpj_pass", ""),
+        value=st.session_state.get("_jpj_pass", "H@naAlees4"),
         placeholder="••••••••",
         label_visibility="collapsed",
     )
