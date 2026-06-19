@@ -572,7 +572,7 @@ def _zk_api_select_option(page, css_selector, option_label):
     css_selector can be a CSS selector string or a direct widget UUID.
     Returns the selected label on success.
     """
-    page.wait_for_timeout(150)
+    page.wait_for_timeout(80)
 
     # Determine widget_id: if css_selector starts with # and has no spaces, treat as direct ID
     if css_selector.startswith('#') and ' ' not in css_selector and '.' not in css_selector:
@@ -589,7 +589,7 @@ def _zk_api_select_option(page, css_selector, option_label):
         raise Exception(f"Cannot fire onChange on {widget_id}")
 
     # Wait a moment then try to fire onSelect with item UUID
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(150)
     items = _zk_api_get_items(page, widget_id)
     target = None
     for item in items:
@@ -602,7 +602,7 @@ def _zk_api_select_option(page, css_selector, option_label):
 
     # Wait for AU round-trip
     page.wait_for_load_state("networkidle", timeout=8_000)
-    page.wait_for_timeout(150)
+    page.wait_for_timeout(80)
     return option_label
 
 
@@ -668,9 +668,9 @@ def _zk_api_fill_number(page, number_str):
     )
 
     # Wait for result
-    page.wait_for_timeout(200)
-    page.wait_for_load_state("networkidle", timeout=15_000)
     page.wait_for_timeout(100)
+    page.wait_for_load_state("networkidle", timeout=15_000)
+    page.wait_for_timeout(50)
 
 
 # ---------------------------------------------------------------------------
@@ -778,7 +778,7 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
         ).first
         if carian_tab.is_visible(timeout=2000):
             carian_tab.click()
-            page.wait_for_timeout(200)
+            page.wait_for_timeout(100)
     except Exception:
         pass
 
@@ -803,7 +803,7 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
 
     # Awalan
     try:
-        page.wait_for_timeout(400)
+        page.wait_for_timeout(200)
         page.wait_for_load_state("networkidle", timeout=8_000)
 
         awalan_info = page.evaluate("""() => {
@@ -835,7 +835,7 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
             first_awalan_raw = awalan_info["items"][0]["label_raw"]
         else:
             _zk_api_fire(page, awalan_info["id"], 'onChange', {"value": "", "start": 0})
-            page.wait_for_timeout(400)
+            page.wait_for_timeout(200)
             page.wait_for_load_state("networkidle", timeout=8_000)
             items_after = _zk_api_get_items(page, awalan_info["id"])
             if items_after and len(items_after) > 0:
@@ -892,7 +892,7 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
     try:
         _zk_api_fill_number(page, num_str)
         _zk_dismiss_popups(page)
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(150)
     except Exception:
         return None
 
@@ -912,7 +912,7 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
     return None
 
 
-def check_number(number, headless=False, debug=False, on_progress=None):
+def check_number(number, headless=False, debug=False, on_progress=None, stop_event=None):
     """Check a number on real JPJ mySIKAP using ZK framework.
 
     Args:
@@ -920,6 +920,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
         headless: Run browser in background
         debug: Save screenshots / logs
         on_progress: Callback(state_dict) called after each state result
+        stop_event: threading.Event to signal early stop
     """
     results = {}
     _ensure_dirs()
@@ -996,7 +997,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
             page.evaluate("""() => {
                 window.location.hash = '/vel/04velnummgt/vel04ReserveNumberAdd';
             }""")
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(1500)
             try:
                 page.wait_for_load_state("networkidle", timeout=15_000)
             except Exception:
@@ -1015,7 +1016,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
                         page.evaluate("""() => {
                             window.location.hash = '/vel/04velnummgt/vel04ReserveNumberAdd';
                         }""")
-                        page.wait_for_timeout(3000)
+                        page.wait_for_timeout(1500)
                         try:
                             page.wait_for_load_state("networkidle", timeout=10_000)
                         except Exception:
@@ -1026,7 +1027,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
                             "https://public.jpj.gov.my/public/#%2Fvel%2F04velnummgt%2Fvel04ReserveNumberAdd",
                             wait_until="domcontentloaded", timeout=30_000,
                         )
-                        page.wait_for_timeout(5000)
+                        page.wait_for_timeout(3000)
                         page.wait_for_selector(
                             "#seriesCategoryTableId", state="visible", timeout=15_000
                         )
@@ -1039,7 +1040,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
                 ).first
                 if carian_tab.is_visible(timeout=3000):
                     carian_tab.click()
-                    page.wait_for_timeout(500)
+                    page.wait_for_timeout(300)
             except Exception:
                 pass
 
@@ -1063,7 +1064,7 @@ def check_number(number, headless=False, debug=False, on_progress=None):
                         }
                     }
                 }""")
-                page.wait_for_timeout(2000)
+                page.wait_for_timeout(1000)
             print(f"  Form siap")
 
             # Select Kategori Siri via ZK API
@@ -1079,6 +1080,9 @@ def check_number(number, headless=False, debug=False, on_progress=None):
 
             # ── State-checking loop ──
             for code, state_name, jpj_state in PRODUCTION_STATES:
+                    if stop_event and stop_event.is_set():
+                        print(f"  ⏹️  Dihentikan oleh pengguna")
+                        break
                     print(f"\n  --- {state_name} ({code}) ---")
                     rd = _check_single_state(page, code, state_name, jpj_state, num_str)
                     if rd == "__SESSION_LOST__":
@@ -1091,7 +1095,9 @@ def check_number(number, headless=False, debug=False, on_progress=None):
                         if on_progress:
                             on_progress(rd)
                     # brief pause between states
-                    page.wait_for_timeout(200)
+                    if stop_event and stop_event.is_set():
+                        break
+                    page.wait_for_timeout(100)
 
             # Summary
             available_codes = [s for s, d in results.items() if d["available"]]
