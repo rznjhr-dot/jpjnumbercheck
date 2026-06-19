@@ -912,7 +912,8 @@ def _check_single_state(page, code, state_name, jpj_state, num_str):
     return None
 
 
-def check_number(number, headless=False, debug=False, on_progress=None, stop_event=None):
+def check_number(number, headless=False, debug=False, on_progress=None, stop_event=None,
+                 username=None, password=None):
     """Check a number on real JPJ mySIKAP using ZK framework.
 
     Args:
@@ -921,6 +922,8 @@ def check_number(number, headless=False, debug=False, on_progress=None, stop_eve
         debug: Save screenshots / logs
         on_progress: Callback(state_dict) called after each state result
         stop_event: threading.Event to signal early stop
+        username: Pre-fill login username/IC (optional)
+        password: Pre-fill login password (optional)
     """
     results = {}
     _ensure_dirs()
@@ -972,6 +975,21 @@ def check_number(number, headless=False, debug=False, on_progress=None, stop_eve
                     print("    python3 jpj_automation.py --login")
                     print("  Then try again.\n")
                     return results
+
+                # Auto-fill username/password if provided
+                if username or password:
+                    try:
+                        page.wait_for_selector("#txtusername", state="visible", timeout=10_000)
+                        if username:
+                            page.fill("#txtusername", username)
+                            print(f"  Username diisi")
+                        if password:
+                            page.fill("#txtpassword", password)
+                            print(f"  Password diisi")
+                        print("  Sila masukkan CAPTCHA dan klik Log Masuk")
+                    except Exception as e:
+                        print(f"  Gagal isi login form: {e}")
+
                 ok = _wait_manual_login(page)
                 if ok:
                     _save_session(ctx)

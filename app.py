@@ -631,6 +631,8 @@ if check_btn:
                 debug=_debug,
                 on_progress=on_progress,
                 stop_event=_stop_ev,
+                username=username or None,
+                password=password or None,
             )
             check_result[0] = r
         except Exception as e:
@@ -820,6 +822,28 @@ elif (
 
 # ── Sidebar ──
 with st.sidebar:
+    st.markdown("### Login JPJ")
+    username = st.text_input(
+        "No. IC / Username",
+        value=st.session_state.get("_jpj_user", ""),
+        placeholder="000101-01-0000",
+        label_visibility="collapsed",
+    )
+    password = st.text_input(
+        "Password",
+        type="password",
+        value=st.session_state.get("_jpj_pass", ""),
+        placeholder="••••••••",
+        label_visibility="collapsed",
+    )
+    if username:
+        st.session_state["_jpj_user"] = username
+    if password:
+        st.session_state["_jpj_pass"] = password
+    st.caption("Fields will be pre-filled in the browser — you only need to enter the CAPTCHA.")
+
+    st.divider()
+
     st.markdown("### Settings")
     debug = st.checkbox(
         "Debug mode",
