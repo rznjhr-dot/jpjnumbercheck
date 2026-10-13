@@ -1,0 +1,14 @@
+sessions/
+output/
+*.json
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.ghost/
+.playwright-mcp/
+debug/
+captured_traffic/
+.venv/
+*.log
+.kilo/
